@@ -36,6 +36,7 @@ class Stats:
         # 獲取滑動條的值
         slider_value = self.slider.value()
         self.label.setText(f" {slider_value}")
+    
         
 #開啟Qapp來管理所有視窗
 app = QApplication([])
