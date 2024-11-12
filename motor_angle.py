@@ -7,6 +7,8 @@ from PySide6.QtMultimediaWidgets import QGraphicsVideoItem
 from PySide6.QtCore import QUrl
 import sys
 
+#修改
+
 
 #啟用ui加載
 uiLoader = QUiLoader()
