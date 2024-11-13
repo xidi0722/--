@@ -5,6 +5,7 @@ from PySide6.QtCore import QFile, QTimer, QThread, Signal
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QGraphicsVideoItem
 from PySide6.QtCore import QUrl
+import os
 import sys
 
 #修改
@@ -33,7 +34,11 @@ class Stats:
 
     def set_angel(self):
         #填入樹梅派更動
-        print(2)
+        
+        main = "C:/Users/USER/Desktop/專案/exe/Volume_up.exe"
+        f = os.popen(main)    
+        f.close()    
+
     def update_slider_value(self):
         # 獲取滑動條的值
         slider_value = self.slider.value()
