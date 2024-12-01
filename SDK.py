@@ -1,67 +1,78 @@
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QVBoxLayout, QGridLayout, QApplication, QWidget
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtGui import QPixmap
-from PySide6.QtCore import QFile, QTimer, QThread, Signal
-from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PySide6.QtMultimediaWidgets import QGraphicsVideoItem
-from PySide6.QtCore import QUrl
-from PySide6 import QtCore
-import os
+from PySide6.QtCore import QTimer, Qt
+from panda3d.core import WindowProperties, AmbientLight, loadPrcFileData
+from direct.showbase.ShowBase import ShowBase
 import sys
+import win32gui
+from PySide6.QtGui import QWindow
 
-#修改
+QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
+#隱藏panda3d的邊框和選擇欄
+loadPrcFileData('', 'undecorated 1')  
+class Panda3DWidget(QWidget):
+    def __init__(self, base, parent=None):
+        super().__init__(parent)
+        self.base = base
+        #獲得panda3d的句柄(像索引的東西)
+        Wid = win32gui.FindWindowEx(0, 0, None, "Panda")
+        if Wid == 0:
+            print("Failed to find Panda3D window.")
+        else:
+            #將panda3d變成Qwindow(類型)
+            self.sub_window = QWindow.fromWinId(Wid)
+            #將Qwindow從類型變成物件供Qt操作
+            self.displayer = QWidget.createWindowContainer(self.sub_window)
+            layout = QGridLayout(self)
+            #加入布局(建立視窗但尚未加入容器)
+            layout.addWidget(self.displayer)
+        
 
+        # 定期更新 Panda3D 渲染
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_panda)
+        self.timer.start(16)  # 每秒 60 幀 (16 毫秒刷新)
 
-#啟用ui加載
-uiLoader = QUiLoader()
+        # 加載模型
+        self.model = self.base.loader.loadModel("blender/robo1.glb")
+        if self.model:
+            self.model.reparentTo(self.base.render)
+        else:
+            print("Model failed to load.")
+
+        # 設置相機
+        self.base.cam.setPos(0, -15, 10)
+        self.base.cam.lookAt(self.model)
+
+        # 添加光源
+        ambient_light = AmbientLight('ambient_light')
+        ambient_light.setColor((0.5, 0.5, 0.5, 1))
+        ambient_node = self.base.render.attachNewNode(ambient_light)
+        self.base.render.setLight(ambient_node)
+
+    def update_panda(self):
+        """更新 Panda3D 的渲染任務"""
+        self.base.taskMgr.step()
 
 class Stats:
-    
     def __init__(self):
-        #載入UI
-        self.ui = uiLoader.load('ui/SDK.ui')
-        # 取得元件
-        self.slider1 = self.ui.Slider1
-        self.label1 = self.ui.Slider_num1
-        #點擊按鈕連接更動的函數
+        # 加載 UI 文件
+        self.ui = QUiLoader().load('ui/SDK.ui')
 
+        # 初始化 Panda3D 基礎類
+        self.base = ShowBase()
 
-        # 設定 Slider 的最小值和最大值
-        self.slider1.setMinimum(0)    
-        self.slider1.setMaximum(180)
+        # 查找 UI 中的容器部件
+        container = self.ui.findChild(QWidget, "Panda3DContainer")
+        # 創建 Panda3DWidget嵌入到容器中(parent=父控件)
+        self.panda_widget = Panda3DWidget(self.base, parent=container)
 
-        middle_value = (self.slider1.minimum() + self.slider1.maximum()) // 2
-        self.slider1.setValue(middle_value)
-        
+        # 創建佈局
+        layout = QVBoxLayout(container)
+        #將 Panda3D 渲染窗口添加到 UI 中
+        layout.addWidget(self.panda_widget)
 
-        # 當 Slider 的值改變時連接函數
-        self.slider1.valueChanged.connect(self.update_slider_value)
-        QTimer.singleShot(0, self.updateLabelPosition)
-
-    def set_angel(self):
-        #填入樹梅派更動
-        
-        main = "C:/Users/USER/Desktop/專案/exe/Volume_up.exe"
-        f = os.popen(main)    
-        f.close()    
-
-    def update_slider_value(self):
-        # 獲取滑動條的值
-        slider_value = self.slider1.value()
-        self.label1.setText(f" {slider_value}")
-        self.updateLabelPosition()
-    def updateLabelPosition(self):
-        
-        slider_pos = self.slider1.mapToGlobal(self.slider1.rect().topLeft())
-        x =  slider_pos.x() + (self.slider1.width()+8- self.label1.width()/2) * (self.slider1.value() - self.slider1.minimum()) / (self.slider1.maximum() - self.slider1.minimum())
-        y = y = slider_pos.y() - self.label1.height() - 5  # 滑塊上方 25 像素的位置
-        self.label1.move(self.ui.mapFromGlobal(QtCore.QPoint(x, y)))
-        # 圖層上移保證在上面
-        self.label1.raise_()  
-    
-        
-#開啟Qapp來管理所有視窗
-app = QApplication([])
+app = QApplication(sys.argv)
 stats = Stats()
-stats.ui.show()  # 顯示UI介面
+stats.ui.show()
 app.exec()

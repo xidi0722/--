@@ -64,7 +64,7 @@ class Ui_Form(object):
         self.label_12.setGeometry(QRect(60, 210, 41, 16))
         self.widget = QWidget(Form)
         self.widget.setObjectName(u"widget")
-        self.widget.setGeometry(QRect(10, 40, 341, 41))
+        self.widget.setGeometry(QRect(10, 40, 271, 41))
         self.horizontalLayoutWidget = QWidget(self.widget)
         self.horizontalLayoutWidget.setObjectName(u"horizontalLayoutWidget")
         self.horizontalLayoutWidget.setGeometry(QRect(0, -20, 261, 80))
@@ -104,6 +104,9 @@ class Ui_Form(object):
         self.Slider_num4 = QLabel(Form)
         self.Slider_num4.setObjectName(u"Slider_num4")
         self.Slider_num4.setGeometry(QRect(80, 190, 53, 16))
+        self.Panda3DContainer = QWidget(Form)
+        self.Panda3DContainer.setObjectName(u"Panda3DContainer")
+        self.Panda3DContainer.setGeometry(QRect(290, 30, 261, 251))
         self.widget.raise_()
         self.Slider3.raise_()
         self.Slider4.raise_()
@@ -121,6 +124,7 @@ class Ui_Form(object):
         self.Slider_num2.raise_()
         self.Slider_num3.raise_()
         self.Slider_num4.raise_()
+        self.Panda3DContainer.raise_()
 
         self.retranslateUi(Form)
 

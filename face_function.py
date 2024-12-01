@@ -14,6 +14,7 @@ class face_rec(SimpleFacerec):
         self.refilename("images/")
         #載入和編譯圖片
         self.load_encoding_images("images/")
+        
     def face(self):
         cap = cv2.VideoCapture(0)
         while True:

@@ -174,7 +174,7 @@
     <rect>
      <x>10</x>
      <y>40</y>
-     <width>341</width>
+     <width>271</width>
      <height>41</height>
     </rect>
    </property>
@@ -271,6 +271,16 @@
     <string>0</string>
    </property>
   </widget>
+  <widget class="QWidget" name="Panda3DContainer" native="true">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>30</y>
+     <width>261</width>
+     <height>251</height>
+    </rect>
+   </property>
+  </widget>
   <zorder>widget</zorder>
   <zorder>Slider3</zorder>
   <zorder>Slider4</zorder>
@@ -288,6 +298,7 @@
   <zorder>Slider_num2</zorder>
   <zorder>Slider_num3</zorder>
   <zorder>Slider_num4</zorder>
+  <zorder>Panda3DContainer</zorder>
  </widget>
  <resources/>
  <connections/>
