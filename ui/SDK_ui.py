@@ -15,8 +15,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QSizePolicy,
-    QSlider, QWidget)
+from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QPushButton,
+    QSizePolicy, QSlider, QWidget)
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -107,6 +107,18 @@ class Ui_Form(object):
         self.Panda3DContainer = QWidget(Form)
         self.Panda3DContainer.setObjectName(u"Panda3DContainer")
         self.Panda3DContainer.setGeometry(QRect(290, 30, 261, 251))
+        self.store_button = QPushButton(Form)
+        self.store_button.setObjectName(u"store_button")
+        self.store_button.setGeometry(QRect(10, 250, 75, 24))
+        self.store_status = QLabel(Form)
+        self.store_status.setObjectName(u"store_status")
+        self.store_status.setGeometry(QRect(100, 250, 53, 16))
+        self.reset_button = QPushButton(Form)
+        self.reset_button.setObjectName(u"reset_button")
+        self.reset_button.setGeometry(QRect(10, 290, 75, 24))
+        self.play_button = QPushButton(Form)
+        self.play_button.setObjectName(u"play_button")
+        self.play_button.setGeometry(QRect(10, 330, 75, 24))
         self.widget.raise_()
         self.Slider3.raise_()
         self.Slider4.raise_()
@@ -125,6 +137,10 @@ class Ui_Form(object):
         self.Slider_num3.raise_()
         self.Slider_num4.raise_()
         self.Panda3DContainer.raise_()
+        self.store_button.raise_()
+        self.store_status.raise_()
+        self.reset_button.raise_()
+        self.play_button.raise_()
 
         self.retranslateUi(Form)
 
@@ -149,5 +165,9 @@ class Ui_Form(object):
         self.Slider_num2.setText(QCoreApplication.translate("Form", u"90", None))
         self.Slider_num3.setText(QCoreApplication.translate("Form", u"90", None))
         self.Slider_num4.setText(QCoreApplication.translate("Form", u"90", None))
+        self.store_button.setText(QCoreApplication.translate("Form", u"STORE", None))
+        self.store_status.setText(QCoreApplication.translate("Form", u"no", None))
+        self.reset_button.setText(QCoreApplication.translate("Form", u"reset", None))
+        self.play_button.setText(QCoreApplication.translate("Form", u"Play", None))
     # retranslateUi
 

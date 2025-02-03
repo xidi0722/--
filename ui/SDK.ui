@@ -281,6 +281,58 @@
     </rect>
    </property>
   </widget>
+  <widget class="QPushButton" name="store_button">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>250</y>
+     <width>75</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>STORE</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="store_status">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>250</y>
+     <width>53</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>no</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="reset_button">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>290</y>
+     <width>75</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>reset</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="play_button">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>330</y>
+     <width>75</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Play</string>
+   </property>
+  </widget>
   <zorder>widget</zorder>
   <zorder>Slider3</zorder>
   <zorder>Slider4</zorder>
@@ -299,6 +351,10 @@
   <zorder>Slider_num3</zorder>
   <zorder>Slider_num4</zorder>
   <zorder>Panda3DContainer</zorder>
+  <zorder>store_button</zorder>
+  <zorder>store_status</zorder>
+  <zorder>reset_button</zorder>
+  <zorder>play_button</zorder>
  </widget>
  <resources/>
  <connections/>

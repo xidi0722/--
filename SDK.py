@@ -91,6 +91,9 @@ class Stats:
         self.panda_widget = Panda3DWidget(self.base, parent=container)
         self.slider3.valueChanged.connect(lambda:self.panda_widget.left_arm.setHpr(0, 0,self.slider3.value()))
         self.slider4.valueChanged.connect(lambda:self.panda_widget.right_arm.setHpr(0, 0,self.slider4.value()))
+        self.ui.store_button.clicked.connect(self.store_event)
+        self.ui.reset_button.clicked.connect(self.reset_event)
+        self.ui.play_button.clicked.connect(self.play_event)
         # 創建佈局
         layout = QVBoxLayout(container)
 
@@ -98,6 +101,7 @@ class Stats:
         layout.addWidget(self.panda_widget)
 
     def get_inponent(self,ui):
+        self.store_file=[]
         self.slider1 = ui.Slider1
         self.slider2 = ui.Slider2
         self.slider3 = ui.Slider3
@@ -130,7 +134,61 @@ class Stats:
         y = slider_pos.y() - 25  # 滑塊上方 25 像素的位置
         label.move(self.ui.mapFromGlobal(QtCore.QPoint(x, y)))
         # 圖層上移保證在上面
-        label.raise_()  
+        label.raise_()
+    #儲存按鈕的事件
+    def store_event(self):
+        self.store_file.append((self.slider1.value(),self.slider2.value(),self.slider3.value(),self.slider4.value()))
+        print(self.store_file)
+    #重製按鈕的事件
+    def reset_event(self):
+        self.store_file=[]
+        print('reset sucessful')
+    def play_event(self):
+        if self.store_file:
+            # 定義播放參數
+            self.current_index = 0
+            self.total_steps = 30  # 每次過渡的總步數
+            self.step_counter = 0
+
+            # 設置定時器，用於逐步更新模型
+            self.animation_timer = QTimer(self.ui)
+            self.animation_timer.timeout.connect(self.animate_to_next_pose)
+            self.animation_timer.start(16)  # 每 16 毫秒觸發一次 (60 FPS)
+
+            print("Animation started.")
+        else:
+            print("No saved poses to play.")
+
+    def animate_to_next_pose(self):
+        # 獲取當前和下一個目標數據
+        current_pose = self.store_file[self.current_index]
+        next_index = (self.current_index + 1) % len(self.store_file)
+        next_pose = self.store_file[next_index]
+
+        # 計算插值過渡
+        t = self.step_counter / self.total_steps 
+        #獲取四個橫條的數據
+        interpolated_pose = [
+            current_pose[i] + (next_pose[i] - current_pose[i]) * t for i in range(4)
+        ]
+        print(interpolated_pose)
+        # 更新模型的角度
+        head_angle, body_angle, left_arm_angle, right_arm_angle = interpolated_pose
+        self.panda_widget.left_arm.setHpr(0, 0, left_arm_angle)
+        self.panda_widget.right_arm.setHpr(0, 0, right_arm_angle)
+       
+
+        self.step_counter += 1
+
+        # 判斷是否完成當前過渡
+        if self.step_counter > self.total_steps:
+            self.step_counter = 0
+            self.current_index = next_index
+            # 完成所有動作
+            if self.current_index == 0:  
+                self.animation_timer.stop()
+                print("Animation finished.")
+
 
 app = QApplication(sys.argv)
 stats = Stats()
