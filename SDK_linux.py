@@ -2,10 +2,12 @@ from PySide6.QtWidgets import QVBoxLayout, QGridLayout, QApplication, QWidget
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QTimer, Qt
 from PySide6 import QtCore
+from PySide6.QtGui import QWindow
+
 from panda3d.core import WindowProperties, NodePath, PointLight, AmbientLight, loadPrcFileData
 from direct.showbase.ShowBase import ShowBase
 import sys
-from PySide6.QtGui import QWindow
+
 
 QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
 # 隱藏panda3d的邊框和選擇欄

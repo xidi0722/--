@@ -110,9 +110,6 @@ class Ui_Form(object):
         self.store_button = QPushButton(Form)
         self.store_button.setObjectName(u"store_button")
         self.store_button.setGeometry(QRect(10, 250, 75, 24))
-        self.store_status = QLabel(Form)
-        self.store_status.setObjectName(u"store_status")
-        self.store_status.setGeometry(QRect(100, 250, 53, 16))
         self.reset_button = QPushButton(Form)
         self.reset_button.setObjectName(u"reset_button")
         self.reset_button.setGeometry(QRect(10, 290, 75, 24))
@@ -138,7 +135,6 @@ class Ui_Form(object):
         self.Slider_num4.raise_()
         self.Panda3DContainer.raise_()
         self.store_button.raise_()
-        self.store_status.raise_()
         self.reset_button.raise_()
         self.play_button.raise_()
 
@@ -166,7 +162,6 @@ class Ui_Form(object):
         self.Slider_num3.setText(QCoreApplication.translate("Form", u"90", None))
         self.Slider_num4.setText(QCoreApplication.translate("Form", u"90", None))
         self.store_button.setText(QCoreApplication.translate("Form", u"STORE", None))
-        self.store_status.setText(QCoreApplication.translate("Form", u"no", None))
         self.reset_button.setText(QCoreApplication.translate("Form", u"reset", None))
         self.play_button.setText(QCoreApplication.translate("Form", u"Play", None))
     # retranslateUi
