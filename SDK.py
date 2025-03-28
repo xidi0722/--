@@ -1,68 +1,52 @@
-from PyQt5.QtWidgets import QVBoxLayout, QGridLayout, QApplication, QWidget
-from PyQt5.uic import loadUi
-from PyQt5.QtCore import QTimer, Qt
-from PyQt5 import QtCore
-from panda3d.core import WindowProperties, NodePath, PointLight, AmbientLight, loadPrcFileData
+from PySide6.QtWidgets import QVBoxLayout, QGridLayout, QApplication, QWidget
+from PySide6.QtUiTools import QUiLoader
+from PySide6.QtCore import QTimer, Qt
+from PySide6 import QtCore
+from panda3d.core import WindowProperties,NodePath,PointLight,AmbientLight, loadPrcFileData
 from direct.showbase.ShowBase import ShowBase
 import sys
-from Xlib import display as xdisplay  # 用於 X11 操作
+import win32gui
+from PySide6.QtGui import QWindow
 
 QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
-# 隱藏 Panda3D 的邊框和標題欄
-loadPrcFileData('', 'undecorated 1')
-
+#隱藏panda3d的邊框和選擇欄
+loadPrcFileData('', 'undecorated 1')  
 class Panda3DWidget(QWidget):
     def __init__(self, base, parent=None):
         super().__init__(parent)
         self.base = base
-
-        # 在 Linux 上獲取 Panda3D 視窗的 X11 ID
-        self.wid = None
-        self.find_panda_window()
-
-        if self.wid:
-            # 將 Panda3D 視窗設為子視窗
-            self.setMinimumSize(400, 400)  # 設置最小尺寸
-            disp = xdisplay.Display()
-            panda_window = disp.create_resource_object('window', self.wid)
-            qt_window = disp.create_resource_object('window', int(self.winId()))
-            panda_window.reparent_window(qt_window)  # 將 Panda3D 視窗設為 Qt 的子視窗
-            disp.sync()
+        #獲得panda3d的句柄(像索引的東西)
+        Wid = win32gui.FindWindowEx(0, 0, None, "Panda")
+        if Wid == 0:
+            print("Failed to find Panda3D window.")
         else:
-            print("無法找到 Panda3D 視窗。")
+            #將panda3d變成Qwindow(類型)
+            self.sub_window = QWindow.fromWinId(Wid)
+            #將Qwindow從類型變成物件供Qt操作
+            self.displayer = QWidget.createWindowContainer(self.sub_window)
+            layout = QGridLayout(self)
+            #加入布局(建立視窗但尚未加入容器)
+            layout.addWidget(self.displayer)
+        
 
-        # 定時更新 Panda3D 渲染
+        # 定期更新 Panda3D 渲染
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_panda)
-        self.timer.start(16)  # 每秒 60 幀 (16 毫秒刷新一次)
+        self.timer.start(16)  # 每秒 60 幀 (16 毫秒刷新)
 
-        # 載入模型
+        # 加載模型
         self.model = self.base.loader.loadModel("blender/robo1.glb")
         if self.model:
             self.model.reparentTo(self.base.render)
         else:
-            print("模型載入失敗。")
-        self.left_arm = self.model.find("**/left_arm")
-        self.right_arm = self.model.find("**/right_arm")
-        # 設置攝影機位置
+            print("Model failed to load.")
+        self.left_arm = self.model.find("**/left_arm")  
+        self.right_arm = self.model.find("**/right_arm") 
+        # 設置相機
         self.base.cam.setPos(8, 3, 3)
         self.base.cam.lookAt(self.model)
 
         self.add_lighting()
-
-    def find_panda_window(self):
-        """查找 Panda3D 視窗的 X11 ID"""
-        disp = xdisplay.Display()
-        root = disp.screen().root
-        window_ids = root.get_full_property(disp.intern_atom('_NET_CLIENT_LIST'), 0).value
-        for wid in window_ids:
-            window = disp.create_resource_object('window', wid)
-            name = window.get_wm_name()
-            if name == "Panda":  # Panda3D 視窗的標題
-                self.wid = wid
-                break
-        disp.close()
-
     def add_lighting(self):
         # 創建環境光源
         ambient_light = AmbientLight('ambient_light')
@@ -77,6 +61,7 @@ class Panda3DWidget(QWidget):
         point_light_node.setPos(10, -10, 10)  # 設置光源位置
         self.base.render.setLight(point_light_node)
 
+      
     def update_panda(self):
         """更新 Panda3D 的渲染任務"""
         self.base.taskMgr.step()
@@ -85,7 +70,7 @@ class Stats:
     def __init__(self):
        
         # 加載 UI 文件
-        self.ui = loadUi('ui/SDK.ui')
+        self.ui = QUiLoader().load('ui/SDK.ui')
 
         # 取得元件
         self.get_inponent(self.ui)

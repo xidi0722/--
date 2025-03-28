@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>581</width>
-    <height>425</height>
+    <height>440</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -101,7 +101,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>0</string>
+    <string>-90</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_8">
@@ -114,7 +114,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>180</string>
+    <string>90</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_9">
@@ -127,7 +127,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>180</string>
+    <string>90</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_10">
@@ -140,7 +140,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>180</string>
+    <string>90</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_11">
@@ -153,7 +153,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>0</string>
+    <string>-90</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_12">
@@ -166,7 +166,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>0</string>
+    <string>-90</string>
    </property>
   </widget>
   <widget class="QWidget" name="widget" native="true">
@@ -198,7 +198,7 @@
      <item>
       <widget class="QLabel" name="label_5">
        <property name="text">
-        <string>0  </string>
+        <string>-90</string>
        </property>
       </widget>
      </item>
@@ -212,7 +212,7 @@
      <item>
       <widget class="QLabel" name="label_6">
        <property name="text">
-        <string>180</string>
+        <string>90</string>
        </property>
       </widget>
      </item>
@@ -229,7 +229,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>90</string>
+    <string>0</string>
    </property>
   </widget>
   <widget class="QLabel" name="Slider_num2">
@@ -242,7 +242,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>90</string>
+    <string>0</string>
    </property>
   </widget>
   <widget class="QLabel" name="Slider_num3">
@@ -255,7 +255,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>90</string>
+    <string>0</string>
    </property>
   </widget>
   <widget class="QLabel" name="Slider_num4">
@@ -268,16 +268,16 @@
     </rect>
    </property>
    <property name="text">
-    <string>90</string>
+    <string>0</string>
    </property>
   </widget>
   <widget class="QWidget" name="Panda3DContainer" native="true">
    <property name="geometry">
     <rect>
-     <x>290</x>
-     <y>30</y>
+     <x>300</x>
+     <y>10</y>
      <width>261</width>
-     <height>251</height>
+     <height>231</height>
     </rect>
    </property>
   </widget>
@@ -291,7 +291,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>STORE</string>
+    <string>store</string>
    </property>
   </widget>
   <widget class="QPushButton" name="reset_button">
@@ -320,6 +320,84 @@
     <string>Play</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="store_file">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>360</y>
+     <width>75</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>save_file</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="play_file">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>400</y>
+     <width>75</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>play_file</string>
+   </property>
+  </widget>
+  <widget class="QScrollArea" name="capturedImagesScrollArea">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>250</y>
+     <width>441</width>
+     <height>181</height>
+    </rect>
+   </property>
+   <property name="widgetResizable">
+    <bool>true</bool>
+   </property>
+   <widget class="QWidget" name="scrollwidget">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>439</width>
+      <height>179</height>
+     </rect>
+    </property>
+    <widget class="QWidget" name="scrollAreaWidgetContents" native="true">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>10</y>
+       <width>381</width>
+       <height>161</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QWidget" name="horizontalLayoutWidget_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>0</y>
+       <width>431</width>
+       <height>181</height>
+      </rect>
+     </property>
+     <layout class="QHBoxLayout" name="capturedImagesLayout"/>
+    </widget>
+   </widget>
+  </widget>
+  <action name="actionpage">
+   <property name="text">
+    <string>page</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
   <zorder>widget</zorder>
   <zorder>Slider3</zorder>
   <zorder>Slider4</zorder>
@@ -341,6 +419,9 @@
   <zorder>store_button</zorder>
   <zorder>reset_button</zorder>
   <zorder>play_button</zorder>
+  <zorder>store_file</zorder>
+  <zorder>play_file</zorder>
+  <zorder>capturedImagesScrollArea</zorder>
  </widget>
  <resources/>
  <connections/>
