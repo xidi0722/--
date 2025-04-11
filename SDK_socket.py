@@ -10,10 +10,50 @@ import sys
 import win32gui
 import socket
 import json
+from PySide6.QtWidgets import QDialog, QGridLayout, QPushButton
+from PySide6.QtGui import QIcon
+from PySide6.QtCore import QSize
 from draggablelable import DraggableLabel
 # Set up shared OpenGL context and Panda3D window properties
 QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
 loadPrcFileData('', 'undecorated 1')
+
+
+EXPRESSION_OPTIONS = {
+    "開心": "images/happy.png",
+    "難過": "images/cry.png",
+    "生氣": "images/angry.png",
+    "鄙視": "images/disdain.png",
+    "愛心": "images/heart.png",
+    "星星": "images/star.png",
+}
+class ExpressionSelectionDialog(QDialog):
+    def __init__(self, expressions, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("選擇表情")
+        self.selected_expression = None
+
+        layout = QGridLayout(self)
+        row = 0
+        col = 0
+        # 每個按鈕以縮圖方式顯示
+        for name, path in expressions.items():
+            btn = QPushButton()
+            btn.setIcon(QIcon(path))
+            btn.setIconSize(QSize(50, 50))
+            btn.setFixedSize(70, 70)
+            btn.setToolTip(name)
+            btn.clicked.connect(lambda _, p=path: self.expression_selected(p))
+            layout.addWidget(btn, row, col)
+            col += 1
+            if col >= 3:  # 每行顯示三個按鈕
+                col = 0
+                row += 1
+
+    def expression_selected(self, path):
+        self.selected_expression = path
+        self.accept()
+
 
 
 class PoseWidget(QWidget):
@@ -21,58 +61,52 @@ class PoseWidget(QWidget):
         super().__init__()
         self.pose_data = pose_data
         self.expression_file = None
-        self.data = {}  # 新增這行，將用來儲存資料字典
-        
-        # 建立佈局與元件時使用傳入的 index
+        self.data = {}  # 用來儲存資料字典
+
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0) 
+        main_layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(main_layout)
-        
+
         button_layout = QHBoxLayout()
         main_layout.addLayout(button_layout)
-        
+
         self.expr_button = QPushButton("選擇表情")
-        self.expr_button.setFixedHeight(30) 
+        self.expr_button.setFixedHeight(30)
         button_layout.addWidget(self.expr_button, alignment=Qt.AlignCenter)
         self.expr_button.clicked.connect(self.select_expression)
-        
+
         self.image_label = DraggableLabel()
         self.image_label.setAlignment(Qt.AlignCenter)
-        self.image_label.setProperty("index", index)  # 設定正確的 index
+        self.image_label.setProperty("index", index)
         main_layout.addWidget(self.image_label, alignment=Qt.AlignCenter)
 
         self.order_label = QLabel(f"{index + 1}")
         self.order_label.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(self.order_label, alignment=Qt.AlignCenter)
 
-
-      
-    
     def select_expression(self):
-        filename, _ = QFileDialog.getOpenFileName(
-            self, "選擇表情檔", "",
-            "Images (*.png *.jpg *.jpeg *.bmp *.gif)"
-        )
-        if filename:
-            self.expression_file = filename
-            # 更新資料字典中的 "expression"
-            self.data["expression"] = filename
+        # 利用自定義對話框顯示固定表情選項
+        dialog = ExpressionSelectionDialog(EXPRESSION_OPTIONS, self)
+        if dialog.exec() == QDialog.Accepted:
+            selected_path = dialog.selected_expression
+            if selected_path:
+                self.expression_file = selected_path
+                self.data["expression"] = selected_path
 
-            # 1. 先載入並縮放圖片（例如縮放到 50x50）
-            pixmap = QPixmap(filename)
-            thumbnail = pixmap.scaled(30, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                # 載入圖片並縮放為縮圖
+                pixmap = QPixmap(selected_path)
+                thumbnail = pixmap.scaled(30, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                base_name = os.path.basename(selected_path)
+                self.expr_button.setIcon(QIcon(thumbnail))
+                self.expr_button.setText(base_name)
+                self.expr_button.setIconSize(thumbnail.size())
 
-            # 2. 設定按鈕圖示、文字與圖示大小
-            base_name = os.path.basename(filename)
-            self.expr_button.setIcon(thumbnail)
-            self.expr_button.setText(base_name)
-            self.expr_button.setIconSize(thumbnail.size())
+                # 根據文字與縮圖寬度設定按鈕大小
+                text_width = self.expr_button.fontMetrics().horizontalAdvance(base_name)
+                button_width = thumbnail.width() + text_width + 20
+                self.expr_button.setFixedWidth(button_width)
+                self.expr_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
-            # 動態計算文字寬度，讓按鈕多留一點空間（例如 +20）
-            text_width = self.expr_button.fontMetrics().horizontalAdvance(base_name)
-            button_width = thumbnail.width() + text_width + 20
-            self.expr_button.setFixedWidth(button_width)
-            self.expr_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
 
         
@@ -173,7 +207,7 @@ class Stats:
         scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.ui.scrollwidget.setAcceptDrops(True)
         # Raspberry Pi settings
-        self.pi_ip = '100.104.0.33'
+        self.pi_ip = '100.105.82.116'
         self.pi_port = 54230
         self.latest_angle = None
         self.command_timer = QTimer(self.ui)
@@ -194,7 +228,7 @@ class Stats:
         self.label2 = ui.Slider_num2
         self.label3 = ui.Slider_num3
         self.label4 = ui.Slider_num4
-
+        self.expressionPreviewLabel=ui.expression_label
     def set_slider(self, slider):
         slider.setMinimum(-90)
         slider.setMaximum(90)
@@ -334,21 +368,39 @@ class Stats:
     def animate_to_next_pose(self):
         current_pose = self.store_file[self.current_index]
         next_pose = self.store_file[self.current_index + 1] if self.current_index < len(self.store_file) - 1 else current_pose
+        
+        # 根據 step_counter 計算動作插值
         t = self.step_counter / self.total_steps
-        interpolated_pose = [current_pose["angles"][i] + (next_pose["angles"][i] - current_pose["angles"][i]) * t for i in range(4)]
+        interpolated_pose = [
+            current_pose["angles"][i] + (next_pose["angles"][i] - current_pose["angles"][i]) * t
+            for i in range(4)
+        ]
         self.latest_angle = interpolated_pose
-        print("Interpolated pose:", interpolated_pose)
 
-        # step_counter==0切換到新的動作 可以在這裡切換表情顯示
+        # step_counter==0：表示剛切到新的動作，可以在這裡更新表情
         if self.step_counter == 0:
             expr = current_pose.get("expression", "")
             print(f"目前動作的表情：{expr}")
+            
+            if expr:
+                pixmap = QPixmap(expr)
+                # 將圖片依照 expressionPreviewLabel 的大小縮放
+                scaled_pixmap = pixmap.scaled(
+                    self.expressionPreviewLabel.size(),
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                )
+                self.expressionPreviewLabel.setPixmap(scaled_pixmap)
+            else:
+                # 如果沒有表情，清空顯示
+                self.expressionPreviewLabel.clear()
 
+        # 讓 Panda3D 的手臂隨著 interpolated_pose 做角度插值
         head_angle, body_angle, left_arm_angle, right_arm_angle = interpolated_pose
         self.panda_widget.left_arm.setHpr(0, 0, left_arm_angle)
         self.panda_widget.right_arm.setHpr(0, 0, right_arm_angle)
-        self.step_counter += 1
 
+        self.step_counter += 1
         if self.step_counter > self.total_steps:
             self.step_counter = 0
             if self.current_index < len(self.store_file) - 1:

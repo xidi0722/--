@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>581</width>
-    <height>440</height>
+    <width>746</width>
+    <height>449</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -351,7 +351,7 @@
     <rect>
      <x>140</x>
      <y>250</y>
-     <width>441</width>
+     <width>581</width>
      <height>181</height>
     </rect>
    </property>
@@ -363,7 +363,7 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>439</width>
+      <width>579</width>
       <height>179</height>
      </rect>
     </property>
@@ -382,13 +382,26 @@
       <rect>
        <x>10</x>
        <y>0</y>
-       <width>431</width>
+       <width>571</width>
        <height>181</height>
       </rect>
      </property>
      <layout class="QHBoxLayout" name="capturedImagesLayout"/>
     </widget>
    </widget>
+  </widget>
+  <widget class="QLabel" name="expression_label">
+   <property name="geometry">
+    <rect>
+     <x>570</x>
+     <y>30</y>
+     <width>131</width>
+     <height>161</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
   </widget>
   <action name="actionpage">
    <property name="text">
@@ -422,6 +435,7 @@
   <zorder>store_file</zorder>
   <zorder>play_file</zorder>
   <zorder>capturedImagesScrollArea</zorder>
+  <zorder>expression_label</zorder>
  </widget>
  <resources/>
  <connections/>

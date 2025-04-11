@@ -36,6 +36,7 @@ class AlarmDialog(QDialog):
 class AlarmBackground:
     def __init__(self):
         self.app = QApplication(sys.argv)
+        self.app.setQuitOnLastWindowClosed(False)
         self.player = QMediaPlayer()
         self.audio_output = QAudioOutput()
         self.player.setAudioOutput(self.audio_output)
@@ -63,15 +64,16 @@ class AlarmBackground:
         self.audio_output.setVolume(volume)
         self.player.play()
         print("背景播放：", sound_path, "音量:", volume)
-        # 彈出 AlarmDialog 讓使用者按下「中止」以停止音效
-        dialog = AlarmDialog(stop_callback=self.player.stop)
-        dialog.exec()
+        # 改用 show() 以非模態方式顯示
+        self.current_dialog = AlarmDialog(stop_callback=self.player.stop)
+        self.current_dialog.show()
+
 
     def run(self):
         sys.exit(self.app.exec())
 
 def signal_handler(sig, frame):
-    print("收到中斷訊號，背景程式正在優雅退出...")
+    print("收到中斷訊號，背景程式正在退出...")
     sys.exit(0)
 
 if __name__ == "__main__":

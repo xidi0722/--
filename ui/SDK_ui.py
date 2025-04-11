@@ -11,19 +11,22 @@
 from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
     QMetaObject, QObject, QPoint, QRect,
     QSize, QTime, QUrl, Qt)
-from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
-    QFont, QFontDatabase, QGradient, QIcon,
-    QImage, QKeySequence, QLinearGradient, QPainter,
-    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
+    QCursor, QFont, QFontDatabase, QGradient,
+    QIcon, QImage, QKeySequence, QLinearGradient,
+    QPainter, QPalette, QPixmap, QRadialGradient,
+    QTransform)
 from PySide6.QtWidgets import (QApplication, QHBoxLayout, QLabel, QPushButton,
-    QScrollArea, QSizePolicy, QSlider, QVBoxLayout,
-    QWidget)
+    QScrollArea, QSizePolicy, QSlider, QWidget)
 
 class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName(u"Form")
-        Form.resize(581, 440)
+        Form.resize(746, 449)
+        self.actionpage = QAction(Form)
+        self.actionpage.setObjectName(u"actionpage")
+        self.actionpage.setMenuRole(QAction.MenuRole.NoRole)
         self.Slider3 = QSlider(Form)
         self.Slider3.setObjectName(u"Slider3")
         self.Slider3.setGeometry(QRect(80, 150, 160, 16))
@@ -107,7 +110,7 @@ class Ui_Form(object):
         self.Slider_num4.setGeometry(QRect(160, 190, 53, 16))
         self.Panda3DContainer = QWidget(Form)
         self.Panda3DContainer.setObjectName(u"Panda3DContainer")
-        self.Panda3DContainer.setGeometry(QRect(290, 30, 261, 251))
+        self.Panda3DContainer.setGeometry(QRect(300, 10, 261, 231))
         self.store_button = QPushButton(Form)
         self.store_button.setObjectName(u"store_button")
         self.store_button.setGeometry(QRect(10, 250, 75, 24))
@@ -125,21 +128,24 @@ class Ui_Form(object):
         self.play_file.setGeometry(QRect(10, 400, 75, 24))
         self.capturedImagesScrollArea = QScrollArea(Form)
         self.capturedImagesScrollArea.setObjectName(u"capturedImagesScrollArea")
-        self.capturedImagesScrollArea.setGeometry(QRect(110, 240, 441, 181))
+        self.capturedImagesScrollArea.setGeometry(QRect(140, 250, 581, 181))
         self.capturedImagesScrollArea.setWidgetResizable(True)
-        self.scrollAreaWidgetContents = QWidget()
+        self.scrollwidget = QWidget()
+        self.scrollwidget.setObjectName(u"scrollwidget")
+        self.scrollwidget.setGeometry(QRect(0, 0, 579, 179))
+        self.scrollAreaWidgetContents = QWidget(self.scrollwidget)
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(QRect(0, 0, 439, 179))
-        self.scrollAreaWidgetContents_2 = QWidget(self.scrollAreaWidgetContents)
-        self.scrollAreaWidgetContents_2.setObjectName(u"scrollAreaWidgetContents_2")
-        self.scrollAreaWidgetContents_2.setGeometry(QRect(20, 10, 120, 161))
-        self.verticalLayoutWidget = QWidget(self.scrollAreaWidgetContents)
-        self.verticalLayoutWidget.setObjectName(u"verticalLayoutWidget")
-        self.verticalLayoutWidget.setGeometry(QRect(170, 40, 160, 80))
-        self.capturedImagesLayout = QVBoxLayout(self.verticalLayoutWidget)
+        self.scrollAreaWidgetContents.setGeometry(QRect(20, 10, 381, 161))
+        self.horizontalLayoutWidget_2 = QWidget(self.scrollwidget)
+        self.horizontalLayoutWidget_2.setObjectName(u"horizontalLayoutWidget_2")
+        self.horizontalLayoutWidget_2.setGeometry(QRect(10, 0, 571, 181))
+        self.capturedImagesLayout = QHBoxLayout(self.horizontalLayoutWidget_2)
         self.capturedImagesLayout.setObjectName(u"capturedImagesLayout")
         self.capturedImagesLayout.setContentsMargins(0, 0, 0, 0)
-        self.capturedImagesScrollArea.setWidget(self.scrollAreaWidgetContents)
+        self.capturedImagesScrollArea.setWidget(self.scrollwidget)
+        self.expression_label = QLabel(Form)
+        self.expression_label.setObjectName(u"expression_label")
+        self.expression_label.setGeometry(QRect(570, 30, 131, 161))
         self.widget.raise_()
         self.Slider3.raise_()
         self.Slider4.raise_()
@@ -164,6 +170,7 @@ class Ui_Form(object):
         self.store_file.raise_()
         self.play_file.raise_()
         self.capturedImagesScrollArea.raise_()
+        self.expression_label.raise_()
 
         self.retranslateUi(Form)
 
@@ -172,6 +179,7 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         Form.setWindowTitle(QCoreApplication.translate("Form", u"Form", None))
+        self.actionpage.setText(QCoreApplication.translate("Form", u"page", None))
         self.label_2.setText(QCoreApplication.translate("Form", u"BODY", None))
         self.label_3.setText(QCoreApplication.translate("Form", u"LEFT", None))
         self.label_4.setText(QCoreApplication.translate("Form", u"RIGHT", None))
@@ -193,5 +201,6 @@ class Ui_Form(object):
         self.play_button.setText(QCoreApplication.translate("Form", u"Play", None))
         self.store_file.setText(QCoreApplication.translate("Form", u"save_file", None))
         self.play_file.setText(QCoreApplication.translate("Form", u"play_file", None))
+        self.expression_label.setText("")
     # retranslateUi
 
