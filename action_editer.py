@@ -1,8 +1,8 @@
 import sys
 import os
 import json
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, QFileDialog, QMenu, QToolTip
-from PyQt5.QtCore import Qt
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, QFileDialog, QMenu, QToolTip
+from PySide6.QtCore import Qt
 
 # 設定基底目錄
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

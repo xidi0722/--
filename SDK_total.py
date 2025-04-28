@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QHBoxLayout,QVBoxLayout, QGridLayout, QApplication, QWidget, QFileDialog, QLabel, QScrollArea,QToolTip,QPushButton, QSizePolicy
+from PySide6.QtWidgets import QHBoxLayout,QVBoxLayout, QGridLayout, QApplication, QWidget, QFileDialog, QLabel, QScrollArea,QToolTip,QPushButton, QSizePolicy,QStackedWidget,QComboBox
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QTimer, Qt, QMimeData
 from PySide6.QtGui import QWindow, QDrag, QPixmap, QImage,QCursor
@@ -7,6 +7,7 @@ from panda3d.core import WindowProperties, NodePath, PointLight, AmbientLight, l
 from direct.showbase.ShowBase import ShowBase
 import os
 import sys
+import subprocess
 import win32gui
 import socket
 import json
@@ -14,10 +15,23 @@ from PySide6.QtWidgets import QDialog, QGridLayout, QPushButton
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import QSize
 from draggablelable import DraggableLabel
+from alarm_gui import AlarmClock
+from action_editer import CustomDropdown
+
 # Set up shared OpenGL context and Panda3D window properties
 QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
 loadPrcFileData('', 'undecorated 1')
-
+# 設定基底目錄
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 指定存放 JSON 檔案的資料夾，並檢查如果不存在就建立
+JSON_DIR = os.path.join(BASE_DIR, "action_json")
+if not os.path.exists(JSON_DIR):
+    os.makedirs(JSON_DIR)
+# 將持久化檔案存放在 action_json 資料夾中
+PERSISTENT_FILE = os.path.join(JSON_DIR, "persistent_files.json")
+ACTION_FOLDER = os.path.join(BASE_DIR, "action_folder")
+if not os.path.exists(ACTION_FOLDER):
+    os.makedirs(ACTION_FOLDER)
 
 EXPRESSION_OPTIONS = {
     "開心": "images/happy.png",
@@ -27,6 +41,60 @@ EXPRESSION_OPTIONS = {
     "愛心": "images/heart.png",
     "星星": "images/star.png",
 }
+def launch_alarm_bg():
+    # 請確認 alarm_bg.py 的完整路徑
+    alarm_path = "alarm_bg.py"
+    # 使用目前的 Python 執行檔
+    python_executable = sys.executable
+
+    # Windows 上設定 DETACHED_PROCESS 標誌
+    DETACHED_PROCESS = 0x00000008
+    creationflags = DETACHED_PROCESS
+
+    # 啟動 alarm_bg 子程序，並將其脫離主程式關聯
+    subprocess.Popen(
+        [python_executable, alarm_path],
+        creationflags=creationflags,
+        close_fds=True,
+    )
+    print("已啟動 alarm_bg 為獨立子程序。")
+class MultiPageContainer(QWidget):
+    def __init__(self, ui_list, parent=None):
+        """
+        ui_list: 一個包含多個 QWidget 頁面的列表
+        """
+        super().__init__(parent)
+        self.ui_list = ui_list
+
+        # 建立主垂直佈局，去除邊距及間距，讓內容貼近左上角
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # 建立頂部水平佈局，用於放置頁面切換控件（例如 QComboBox)
+        top_layout = QHBoxLayout()
+        top_layout.setContentsMargins(0, 0, 0, 0)
+        top_layout.setSpacing(0)
+
+        self.pageSwitcher = QComboBox()
+        # 根據傳入的 ui 頁面建立選項，這裡可以自定義顯示名稱
+        self.pageSwitcher.addItem("動作編輯")
+        self.pageSwitcher.addItem("指令編輯")
+        self.pageSwitcher.addItem("鬧鐘")
+
+        top_layout.addWidget(self.pageSwitcher, alignment=Qt.AlignLeft | Qt.AlignTop)
+        main_layout.addLayout(top_layout)
+
+        # 建立 QStackedWidget 並將各個 ui 頁面加入
+        self.pageStack = QStackedWidget()
+        self.pageStack.setContentsMargins(0, 0, 0, 0)
+        for ui in ui_list:
+            self.pageStack.addWidget(ui)
+        main_layout.addWidget(self.pageStack)
+
+        # 當切換控件改變時，設定 QStackedWidget 切換到相對應的頁面
+        self.pageSwitcher.currentIndexChanged.connect(lambda index: self.pageStack.setCurrentIndex(index))
+
 class ExpressionSelectionDialog(QDialog):
     def __init__(self, expressions, parent=None):
         super().__init__(parent)
@@ -54,11 +122,14 @@ class ExpressionSelectionDialog(QDialog):
         self.selected_expression = path
         self.accept()
 
+
+
 class PoseWidget(QWidget):
     def __init__(self, pose_data, index):
         super().__init__()
         self.pose_data = pose_data
-        self.expression_file = None
+        DEFAULT_EXPRESSION = "images/deafult.png"
+        self.expression_file = DEFAULT_EXPRESSION
         self.data = {}  # 用來儲存資料字典
 
         main_layout = QVBoxLayout(self)
@@ -70,6 +141,15 @@ class PoseWidget(QWidget):
 
         self.expr_button = QPushButton("選擇表情")
         self.expr_button.setFixedHeight(30)
+        pixmap = QPixmap(DEFAULT_EXPRESSION)
+        thumbnail = pixmap.scaled(30, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.expr_button.setIcon(QIcon(thumbnail))
+        self.expr_button.setIconSize(thumbnail.size())
+        # 根據文字與縮圖寬度設定按鈕寬度
+        text_width = self.expr_button.fontMetrics().horizontalAdvance(self.expr_button.text())
+        button_width = thumbnail.width() + text_width + 20
+        self.expr_button.setFixedWidth(button_width)
+        # ---------------------------------
         button_layout.addWidget(self.expr_button, alignment=Qt.AlignCenter)
         self.expr_button.clicked.connect(self.select_expression)
 
@@ -105,29 +185,26 @@ class PoseWidget(QWidget):
                 self.expr_button.setFixedWidth(button_width)
                 self.expr_button.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
-
-
         
-      
-
+    
 class Panda3DWidget(QWidget):
     def __init__(self, base, parent=None):
         super().__init__(parent)
         self.base = base
-        # Get Panda3D window handle
         Wid = win32gui.FindWindowEx(0, 0, None, "Panda")
         if Wid == 0:
             print("Failed to find Panda3D window.")
         else:
             self.sub_window = QWindow.fromWinId(Wid)
             self.displayer = QWidget.createWindowContainer(self.sub_window)
+            # 設定自動擴展
+            self.displayer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             layout = QGridLayout(self)
             layout.addWidget(self.displayer)
-
-        # Update Panda3D rendering
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_panda)
-        self.timer.start(16)  # 60 FPS
+        self.timer.start(16)
+        
 
         # Load model
         self.model = self.base.loader.loadModel("blender/robo1.glb")
@@ -160,6 +237,15 @@ class Stats:
         # Load UI file
         self.ui = QUiLoader().load('ui/SDK.ui')
         self.get_inponent(self.ui)
+
+        self.default_image_path = "images/deafult.png"  # 請確保這個檔案存在
+        pixmap = QPixmap(self.default_image_path)
+        # 可依照需要設定縮放尺寸
+        self.expressionPreviewLabel.setPixmap(pixmap.scaled(
+            self.expressionPreviewLabel.size(),
+            Qt.KeepAspectRatio,
+            Qt.SmoothTransformation
+        ))
 
         # Connect slider events
         self.slider1.valueChanged.connect(lambda: self.update_slider_value(self.slider1, self.label1))
@@ -204,9 +290,11 @@ class Stats:
         scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.ui.scrollwidget.setAcceptDrops(True)
-        # Raspberry Pi settings
+        
+        # Pi 的 IP/Port
         self.pi_ip = '100.105.82.116'
         self.pi_port = 54230
+        self.current_expression = ""
         self.latest_angle = None
         self.command_timer = QTimer(self.ui)
         self.command_timer.timeout.connect(self.send_latest_command)
@@ -390,8 +478,14 @@ class Stats:
                 )
                 self.expressionPreviewLabel.setPixmap(scaled_pixmap)
             else:
-                # 如果沒有表情，清空顯示
-                self.expressionPreviewLabel.clear()
+                # 如果沒有表情，清空顯示 
+                pixmap = QPixmap(self.default_image_path)
+                # 可依照需要設定縮放尺寸
+                self.expressionPreviewLabel.setPixmap(pixmap.scaled(
+                    self.expressionPreviewLabel.size(),
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                ))
 
         # 讓 Panda3D 的手臂隨著 interpolated_pose 做角度插值
         head_angle, body_angle, left_arm_angle, right_arm_angle = interpolated_pose
@@ -452,20 +546,92 @@ class Stats:
 
     def send_latest_command(self):
         if self.latest_angle is not None:
-            self.send_command_to_pi(self.latest_angle)
+            self.send_command(self.latest_angle)
 
-    def send_command_to_pi(self, angle):
-        command = str(angle)
+    def send_command(self, angle):
+        print(f"Angle command: {angle}")
+    def on_sequence_selected(self, which, filepath):
+        """
+        which: 'boot' 或 'idle'
+        filepath: 使用者在下拉選單裡選到的 JSON 檔案路徑
+        """
+        # 1) 讀 JSON 檔案內容
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.connect((self.pi_ip, self.pi_port))
-                sock.sendall(command.encode())
-                print(f"Sent command '{command}' to Pi at {self.pi_ip}:{self.pi_port}")
+            with open(filepath, 'r', encoding='utf-8') as f:
+                seq = json.load(f)
         except Exception as e:
-            print("Failed to send command:", e)
+            print(f"無法讀取 {filepath}：", e)
+            return
+
+        # 2) 封裝成 update_sequence 命令
+        payload = {
+            'update_sequence': {
+                which: seq
+            }
+        }
+
+        # 3) 連到 Pi，送出 payload
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((self.pi_ip, self.pi_port))
+            s.send(json.dumps(payload).encode('utf-8'))
+            s.close()
+            print(f"已更新 Pi 上的 {which}.json")
+        except Exception as e:
+            print("傳送更新到 Pi 失敗：", e)
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
+    launch_alarm_bg()
+    app = QApplication(sys.argv)  # 首先建立 QApplication
+
+    # 建立 AlarmClock 物件，若其為 QMainWindow 則取出 centralWidget
+    alarm = AlarmClock()
+    alarm_widget = alarm.centralWidget() if alarm.centralWidget() is not None else alarm
+
+    # 建立 Stats 物件，假設其主要介面為 stats.ui（透過 QUiLoader 載入）
     stats = Stats()
-    stats.ui.show()
-    app.exec()
+    window = QWidget()
+    window.setWindowTitle("指令編輯")
+    instr_layout = QVBoxLayout(window)
+    instr_layout.setContentsMargins(20,20,20,20)
+    # 建立第三個介面（自訂下拉選單範例）的 widget
+    default_options = [
+        ("開機預設", r"action_folder/boot.json"),
+        ("眨眼",r"action_folder/idle.json")
+        ]
+    dropdown_boot = CustomDropdown(
+        default_options,
+        label_text="開機動作",
+        identifier="boot",
+        persistent_file=os.path.join(JSON_DIR, "persistent_boot.json")
+    )
+    dropdown_idle = CustomDropdown(
+        default_options,
+        label_text="待機動作",
+        identifier="idle",
+        persistent_file=os.path.join(JSON_DIR, "persistent_idle.json")
+    )
+    instr_layout.addWidget(dropdown_boot)
+    instr_layout.addWidget(dropdown_idle)
+
+    # 4) 當使用者在下拉裡選擇檔案時，把對應的 JSON 發給 Pi
+    dropdown_boot.listWidget.itemClicked.connect(
+        lambda _: stats.on_sequence_selected("boot", dropdown_boot.current_selection)
+    )
+    dropdown_idle.listWidget.itemClicked.connect(
+        lambda _: stats.on_sequence_selected("idle", dropdown_idle.current_selection)
+    )
+    
+    
+
+    # 將三個介面加入多頁面容器中
+    container = MultiPageContainer([ stats.ui, window,alarm_widget])
+    #設定視窗標題
+    container.setWindowTitle('小機器人')
+    #設定視窗大小
+    container.resize(800, 600)
+    #設定icon
+    container.setWindowIcon(QIcon("icon/robot.png"))
+    container.show()
+
+    sys.exit(app.exec())
