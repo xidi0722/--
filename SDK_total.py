@@ -169,7 +169,7 @@ class PoseWidget(QWidget):
             selected_path = dialog.selected_expression
             if selected_path:
                 self.expression_file = selected_path
-                self.data["expression"] = selected_path
+                self.data["img"] = selected_path
 
                 # 載入圖片並縮放為縮圖
                 pixmap = QPixmap(selected_path)
@@ -368,7 +368,7 @@ class Stats:
                     self.slider3.value(),
                     self.slider4.value()
                 ),
-                "expression": ""
+                "img": ""
             }
             # 將資料字典存到 PoseWidget 裡，方便後續更新
             pose_widget.data = pose_data_dict
@@ -477,6 +477,7 @@ class Stats:
                     Qt.SmoothTransformation
                 )
                 self.expressionPreviewLabel.setPixmap(scaled_pixmap)
+                self.current_expression = expr
             else:
                 # 如果沒有表情，清空顯示 
                 pixmap = QPixmap(self.default_image_path)
@@ -486,6 +487,7 @@ class Stats:
                     Qt.KeepAspectRatio,
                     Qt.SmoothTransformation
                 ))
+                self.current_expression = ""
 
         # 讓 Panda3D 的手臂隨著 interpolated_pose 做角度插值
         head_angle, body_angle, left_arm_angle, right_arm_angle = interpolated_pose
@@ -502,6 +504,14 @@ class Stats:
                 self.ui.play_button.setEnabled(True)
                 self.latest_angle = None
                 print("Animation finished.")
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect((self.pi_ip, self.pi_port))
+                    s.send(json.dumps({"reset_background": True}).encode("utf-8"))
+                    s.close()
+                    print("已送出 reset_background 給 Pi")
+                except Exception as e:
+                    print("送 reset_background 失敗：", e)
 
     def store_to_file_event(self):
         if not self.store_file:
@@ -535,7 +545,7 @@ class Stats:
                     print("從檔案讀取成功：")
                     for i, data in enumerate(self.store_file):
                         #表情圖片路徑
-                        print(f"動作 {i+1}: angles = {data['angles']}, 表情路徑 = {data['expression']}")
+                        print(f"動作 {i+1}: angles = {data['angles']}, 表情路徑 = {data['img']}")
                     
                     # 直接播放動作
                     self.play_event()
@@ -549,7 +559,23 @@ class Stats:
             self.send_command(self.latest_angle)
 
     def send_command(self, angle):
-        print(f"Angle command: {angle}")
+        # 把角度跟表情一起打包
+        img_name = os.path.basename(self.current_expression) if self.current_expression else None
+
+        payload = {
+            "angles": angle
+        }
+        if img_name:
+            payload["image"] = img_name
+
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((self.pi_ip, self.pi_port))
+            s.send(json.dumps(payload).encode("utf-8"))
+            s.close()
+            print("已送出命令到 Pi：", payload)
+        except Exception as e:
+            print("送命令到 Pi 失敗：", e)
     def on_sequence_selected(self, which, filepath):
         """
         which: 'boot' 或 'idle'
@@ -596,8 +622,8 @@ if __name__ == "__main__":
     instr_layout.setContentsMargins(20,20,20,20)
     # 建立第三個介面（自訂下拉選單範例）的 widget
     default_options = [
-        ("開機預設", r"action_folder/boot.json"),
-        ("眨眼",r"action_folder/idle.json")
+        ("開機預設", r"action_json/boot.json"),
+        ("眨眼",r"action_json/idle.json")
         ]
     dropdown_boot = CustomDropdown(
         default_options,

@@ -443,7 +443,7 @@ class Stats:
                     print("從檔案讀取成功：")
                     for i, data in enumerate(self.store_file):
                         #表情圖片路徑
-                        print(f"動作 {i+1}: angles = {data['angles']}, 表情路徑 = {data['expression']}")
+                        print(f"動作 {i+1}: angles = {data['angles']}, 表情路徑 = {data['img']}")
                     
                     # 直接播放動作
                     self.play_event()

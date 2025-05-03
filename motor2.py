@@ -7,7 +7,7 @@ import time
 import threading
 import socket
 import json
-
+import adafruit_dht
 import busio
 import board
 import digitalio
@@ -15,10 +15,11 @@ from digitalio import DigitalInOut
 from adafruit_pca9685 import PCA9685
 import adafruit_mcp3xxx.mcp3008 as MCP
 from adafruit_mcp3xxx.analog_in import AnalogIn
-
+from gpiozero import Button
+from signal import pause
 # 強制使用 XCB 後端，避免 Wayland 警告
 os.environ["QT_QPA_PLATFORM"] = "xcb"
-
+import RPi.GPIO as GPIO
 from PyQt5.QtCore import Qt, QTimer, QUrl
 from PyQt5.QtWidgets import QApplication, QLabel
 from PyQt5.QtGui import QPixmap
@@ -41,19 +42,38 @@ class Rpib:
         cs = DigitalInOut(board.D5)
         mcp = MCP.MCP3008(spi, cs)
         self.chan = AnalogIn(mcp, MCP.P0)
+        touch = Button(18)
+        # 降低 CPU 優先度
+        os.nice(10)
 
+        # 使用 DHT22，資料腳接在 GPIO 17（可自行改腳位）
+        self.dhtDevice = adafruit_dht.DHT22(board.D17, use_pulseio=False)
+        touch.when_pressed=lambda: print('被觸碰了')
+        touch.when_released=lambda: print('放開了')
+        
+        # --- Vibration Sensor 設定 ---
+        self.vib_pin       = 6        # BCM5，你也可以換別的純 GPIO
+        self.vib_cooldown  = 10       # 冷卻時間：10 秒內只響應一次
+        self._last_vib     = 0        # 上次觸發的時間戳
+
+        # 建立 gpiozero Button 物件，pull_up=False 視你的接線而定
+        self.vib_sensor = Button(self.vib_pin, pull_up=False)
+        # 當偵測到按下（震動）時，呼叫 on_vibration
+        self.vib_sensor.when_pressed = self.on_vibration
+
+      
         # --- 資源資料夾 --- 
         base_dir = os.path.dirname(__file__)
-        video_dir = os.path.join(base_dir, 'video')     # 放 mp4 的資料夾
-        json_dir  = os.path.join(base_dir, 'json')      # 放 json 序列的資料夾
-        img_dir   = os.path.join(base_dir, 'images')    # 放 png、jpg 圖片的資料夾
-
+        self.video_dir = os.path.join(base_dir, 'video')     # 放 mp4 的資料夾
+        self.json_dir  = os.path.join(base_dir, 'json')      # 放 json 序列的資料夾S
+        self.img_dir   = os.path.join(base_dir, 'images')    # 放 png、jpg 圖片的資料夾
+        
         # --- 動畫 & 序列路徑 ---
-        self.boot_video = os.path.join(video_dir, 'boot.mp4')
-        self.idle_video = os.path.join(video_dir, 'idle.mp4')
-        self.boot_seq   = os.path.join(json_dir,  'boot.json')
-        self.idle_seq   = os.path.join(json_dir,  'idle.json')
-        self.static_img_path = os.path.join(img_dir, 'static.png')
+        self.boot_video = os.path.join(self.video_dir, 'boot.mp4')
+        self.idle_video = os.path.join(self.video_dir, 'idle.mp4')
+        self.boot_seq   = os.path.join(self.json_dir,  'boot.json')
+        self.idle_seq   = os.path.join(self.json_dir,  'idle.json')
+        self.static_img_path = os.path.join(self.img_dir, 'deafult.png')
         # --- Qt & 顯示設定 ---
         self.app = QApplication(sys.argv)
 
@@ -67,11 +87,13 @@ class Rpib:
         self.static_widget.setGeometry(
             0, 0, screen_size.width(), screen_size.height()
         )
-        pix = QPixmap(self.static_img_path).scaled(
+        
+        self.deafult_pixmap = QPixmap(self.static_img_path).scaled(
             screen_size,
             Qt.KeepAspectRatioByExpanding,
             Qt.SmoothTransformation
         )
+        pix=self.deafult_pixmap
         self.static_widget.setPixmap(pix)
         self.static_widget.showFullScreen()
         self.static_widget.raise_()
@@ -93,8 +115,13 @@ class Rpib:
         self.idle_timer   = QTimer()
         self.idle_timer.timeout.connect(self.check_idle)
         self.idle_timer.start(1000)
-
-        # 啟動校準
+         # --- DHT22 定時讀取設定（每 5 秒呼叫一次） ---
+        self.dht_timer = QTimer()
+        # 直接把你的讀取函式連到 timeout
+        self.dht_timer.timeout.connect(self.dht22_deteced)
+        # 5000 毫秒 = 5 秒
+        self.dht_timer.start(5000)
+            # 啟動校準
         self.setup()
 
         # 啟動 Socket 監聽
@@ -104,10 +131,33 @@ class Rpib:
             daemon=True
         )
         t.start()
+        try:
+            sys.exit(self.app.exec_())
+        finally:
+            # ⚙️ 清理 GPIO
+            GPIO.cleanup()
+    def on_vibration(self):
+        """震動偵測到後要執行的動作，加上冷卻時間避免連續重複"""
+        now = time.time()
+        if now - self._last_vib < self.vib_cooldown:
+            return
+        self._last_vib = now
 
-        sys.exit(self.app.exec_())
+        # 這裡放你想在偵測到震動後做的事
+        print("🔔 Vibration Detected! 冷卻 10 秒…")
+        # 如果要觸發馬達動作或播放影片，也都可以在這裡呼叫其他 method
+        # 例如： self.run_idle_sequence()
+    def dht22_deteced(self):
+        temperature_c = self.dhtDevice.temperature
+        humidity = self.dhtDevice.humidity
 
-
+        if temperature_c is not None and humidity is not None and 0 < temperature_c < 100 and 0 < humidity < 100:
+            temperature_f = temperature_c * 9 / 5 + 32
+            print(f" Temp: {temperature_f:.1f} F / {temperature_c:.1f} C    Humidity: {humidity:.1f}%")
+            return temperature_c,humidity
+        else:
+            print(" 讀取異常，數值不合常理")
+            return 0
     # --- 伺服 & ADC 輔助函式 ---
     def angle_to_pwm(self, angle):
         a = max(min(angle, 90), -90)
@@ -117,6 +167,7 @@ class Rpib:
     def set_servo_angle(self, ch, ang):
         pwm_val = self.angle_to_pwm(ang)
         self.pwm.channels[ch].duty_cycle = int(pwm_val / 4096 * 65535)
+        
         self.last_active = time.time()
 
     def load_sequence(self, path):
@@ -136,7 +187,6 @@ class Rpib:
             if isinstance(angles, list) and len(angles) == 4:
                 for i, a in enumerate(angles):
                     self.set_servo_angle(i, a)
-                time.sleep(0.5)
 
     # --- 校準步驟 ---
     def setup(self):
@@ -183,7 +233,7 @@ class Rpib:
     def run_boot_sequence(self):
         seq = self.load_sequence(self.boot_seq)
         self.run_sequence(seq)
-
+        
     # --- 空閒邏輯 ---
     def check_idle(self):
         elapsed = time.time() - self.last_active
@@ -216,6 +266,7 @@ class Rpib:
         while True:
             conn, _ = s.accept()
             data = conn.recv(4096)
+            print('raw data',data)
             conn.close()
             if not data:
                 continue
@@ -257,6 +308,15 @@ class Rpib:
                     Qt.SmoothTransformation
                 )
                 self.static_widget.setPixmap(pix)
+                self.static_widget.raise_()
+                self.static_widget.showFullScreen()
+        if cmd.get("reset_background"):
+            print("recover deafult background")
+            self.static_widget.setPixmap(self.deafult_pixmap)
+            self.video_widget.hide()
+            self.static_widget.raise_()
+            self.static_widget.showFullScreen()
+                
         seq_update = cmd.get('update_sequence')
         if isinstance(seq_update, dict):
             # boot.json
@@ -306,7 +366,7 @@ class Rpib:
     def on_media_status(self, status):
         from PyQt5.QtMultimedia import QMediaPlayer
         if status == QMediaPlayer.EndOfMedia:
-            # 結束後退出全螢幕並隱藏影片層
+            # 結束後退出全螢幕並隱藏影片層S
             self.video_widget.setFullScreen(False)
             self.video_widget.hide()
             # 恢復靜態背景
