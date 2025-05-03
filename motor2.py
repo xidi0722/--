@@ -20,12 +20,38 @@ from signal import pause
 # 強制使用 XCB 後端，避免 Wayland 警告
 os.environ["QT_QPA_PLATFORM"] = "xcb"
 import RPi.GPIO as GPIO
-from PyQt5.QtCore import Qt, QTimer, QUrl
+from PyQt5.QtCore import Qt, QTimer, QUrl,QThread, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QLabel
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 from PyQt5.QtMultimediaWidgets import QVideoWidget
 
+
+class SequenceRunner(QThread):
+    # 每次发射当前角度列表
+    step = pyqtSignal(list)
+
+    def __init__(self, seq, interval=200):
+        super().__init__()
+        self.seq = seq
+        self.interval = interval  # 毫秒
+        self.idx = 0
+
+    def run(self):
+        # 在本线程中创建 QTimer
+        timer = QTimer()
+        timer.moveToThread(self)                # 确保定时器属于此线程:contentReference[oaicite:2]{index=2}
+        timer.timeout.connect(self._on_timeout)
+        timer.start(self.interval)              # 启动 200 ms 定时
+        self.exec_()                            # 启动线程事件循环:contentReference[oaicite:3]{index=3}
+
+    def _on_timeout(self):
+        if self.idx >= len(self.seq):
+            self.quit()                         # 执行完毕，退出事件循环并结束线程
+            return
+        angles = self.seq[self.idx]
+        self.step.emit(angles)                 # 发射当前角度列表
+        self.idx += 1
 
 class Rpib:
     """
@@ -73,7 +99,11 @@ class Rpib:
         self.idle_video = os.path.join(self.video_dir, 'idle.mp4')
         self.boot_seq   = os.path.join(self.json_dir,  'boot.json')
         self.idle_seq   = os.path.join(self.json_dir,  'idle.json')
+        # spin 動作
+        self.spin_video = os.path.join(self.video_dir, 'spin.mp4')
+        self.spin_seq   = os.path.join(self.json_dir,  'spin.json')
         self.static_img_path = os.path.join(self.img_dir, 'deafult.png')
+        
         # --- Qt & 顯示設定 ---
         self.app = QApplication(sys.argv)
 
@@ -147,14 +177,30 @@ class Rpib:
         print("🔔 Vibration Detected! 冷卻 10 秒…")
         # 如果要觸發馬達動作或播放影片，也都可以在這裡呼叫其他 method
         # 例如： self.run_idle_sequence()
+        info = self.load_sequence(self.spin_seq)
+        # 用 SequenceRunner 以 200 ms 间隔安全执行舵机动作
+        runner = SequenceRunner(info['sequence'], interval=200)
+        runner.step.connect(lambda angles: [
+            self.set_servo_angle(i, a) for i, a in enumerate(angles)
+        ])
+        runner.start()                        # 启动子线程并进入事件循环
     def dht22_deteced(self):
-        temperature_c = self.dhtDevice.temperature
-        humidity = self.dhtDevice.humidity
+        try:
+            temperature_c = self.dhtDevice.temperature
+            humidity = self.dhtDevice.humidity
+        except RuntimeError as e:
+            # 读取失败时打印日志，下一次定时器调用时再试
+            print(f"DHT22 read error: {e}.")
+            return
+        except Exception as e:
+            print(f"Unexpected DHT22 error: {e}")
+            return
 
-        if temperature_c is not None and humidity is not None and 0 < temperature_c < 100 and 0 < humidity < 100:
+        # 如果读到合理数据，再处理
+        if 0 < temperature_c < 100 and 0 < humidity < 100:
             temperature_f = temperature_c * 9 / 5 + 32
             print(f" Temp: {temperature_f:.1f} F / {temperature_c:.1f} C    Humidity: {humidity:.1f}%")
-            return temperature_c,humidity
+            return temperature_c, humidity
         else:
             print(" 讀取異常，數值不合常理")
             return 0
@@ -184,6 +230,7 @@ class Rpib:
 
     def run_sequence(self, seq):
         for angles in seq:
+            print("→ Setting angles:", angles) 
             if isinstance(angles, list) and len(angles) == 4:
                 for i, a in enumerate(angles):
                     self.set_servo_angle(i, a)
