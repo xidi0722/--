@@ -1,0 +1,16 @@
+{
+    "1": "https://www.youtube.com/",
+    "2": "Spotify",
+    "3": "https://www.google.com/",
+    "4": "",
+    "5": "",
+    "enabled": false,
+    "mapping": {
+        "1": "https://www.youtube.com/",
+        "2": "",
+        "3": "",
+        "4": "",
+        "5": ""
+    },
+    "camera_enabled": true
+}

@@ -1,0 +1,252 @@
+QWidget {
+    background-color: #ADD8E6; /* 淺藍色 */
+}
+QWidget#pandaContainer {
+    background-color: white;          /* 白底 */
+    border: 2px solid #2196F3;        /* 藍色邊框 */
+    border-radius: 8px;                   /* 可選：圓角，讓邊框不那麼生硬 */
+    padding: 8px;                     /* 內距，Panda3D 繪圖視窗會往內縮 */
+    margin: 4px;                      /* 外距，可讓容器和其他 widget 保持間隔 */
+}
+
+
+
+/* 通用所有 QPushButton：白底 + 藍邊 + 藍字 */
+QPushButton {
+    background-color: white;                /* 白色背景 */
+    color: #1976D2;                         /* 深藍文字 */
+    border: 2px solid #2196F3;              /* 主色藍邊框 */
+    border-radius: 6px;                     /* 圓角 */
+
+}
+
+/* 滑鼠懸停：背景變亮藍 + 白字 */
+QPushButton:hover {
+    background-color: #E3F2FD;              /* 淡藍背景 */
+    color: white;                           /* 白字 */
+}
+
+/* 按下時：背景變更深藍 + 白字 */
+QPushButton:pressed {
+    background-color: #2196F3;              /* 主色藍 */
+    color: white;                           /* 白字 */
+}
+
+/* 只針對 objectName="exprButton" 的按鈕（如需保留獨立樣式） */
+QPushButton#exprButton {
+    background-color: #2196F3;              /* 藍色背景 */
+    border: 2px solid #1976D2;              /* 深藍邊框 */
+    color: white;                           /* 白字 */
+}
+
+
+/* 通用 QSlider：隱藏背景並設定高度 */
+QSlider {
+    background: transparent;
+    height: 8px; /* 整體高度與 groove 一致 */
+}
+
+/* 滑軌本體：白底 + 藍邊 */
+QSlider::groove:horizontal {
+    border: 1px solid #2196F3;      /* 主色藍邊框 */
+    background: white;              /* 白色背景 */
+    height: 8px;                    /* 固定高度 */
+    border-radius: 4px;             /* 圓角 */
+}
+
+/* 已選區：填滿主色藍 */
+QSlider::sub-page:horizontal {
+    background: #2196F3;            /* 主色藍 */
+    border: none;                   /* 無額外邊框 */
+    height: 8px;                    /* 與 groove 同高 */
+    border-radius: 4px;             /* 圓角 */
+}
+
+/* 未選區：淡藍底 */
+QSlider::add-page:horizontal {
+    background: #E3F2FD;            /* 淡藍背景 */
+    border: none;                   /* 無邊框 */
+    height: 8px;                    /* 與 groove 同高 */
+    border-radius: 4px;             /* 圓角 */
+}
+
+/* 滑塊本體：白底 + 藍邊 + 圓形 */
+QSlider::handle:horizontal {
+    background: white;              /* 白色滑塊 */
+    border: 2px solid #1976D2;      /* 深藍邊框 */
+    width: 14px;                    /* 固定寬度 */
+    height: 14px;                   /* 固定高度 */
+    margin: -3px 0;                 /* 垂直置中 */
+    border-radius: 7px;             /* 半徑 = 寬度一半，圓形 */
+}
+
+/* 滑塊懸停：藍邊加深 */
+QSlider::handle:horizontal:hover {
+    border-color: #0D47A1;          /* 更深藍邊框 */
+}
+
+/* 滑塊與頁面禁用狀態 */
+QSlider::handle:horizontal:disabled,
+QSlider::sub-page:horizontal:disabled,
+QSlider::add-page:horizontal:disabled {
+    background: #BDBDBD;            /* 灰階處理 */
+    border-color: #9E9E9E;          /* 淺灰邊框 */
+}
+/* 1. 通用所有 QLabel */
+QLabel {
+
+    color: #1976D2;                      /* 深藍文字 */
+
+
+    font-family: "Microsoft JhengHei";    /* 自訂字型 */
+}
+QLabel#exprLabel {
+    background-color: white;        /* 白底 */
+    border: 2px solid #2196F3;      /* 藍色邊框 */
+    border-radius: 6px;             /* 圓角 */
+                       /* 內距 */
+}
+QLabel#poseIndexLabel {
+    background-color: white;
+    color: #1976D2;
+    border-radius: 4px;
+}
+/* 1. 主框架：白底、蓝边、圆角、留出箭头空间 */
+QComboBox#pageSwitcher {
+    background-color: white;
+    color: #1976D2;
+    border: 2px solid #2196F3;
+    border-radius: 6px;
+    padding: 4px 8px;     /* 上下4px、左右8px */
+    min-height: 28px;
+}
+
+/* 2. 下拉按钮区：白底、左分隔线 + 右外框 + 右圆角 */
+QComboBox#pageSwitcher::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;   /* 垂直居中、靠右 */
+    width: 24px;
+    background-color: white;
+    border-left: 1px solid #2196F3;      /* 分隔线 */
+
+}
+/* 3. 用 PNG 做向下箭头 */
+QComboBox#pageSwitcher::down-arrow {
+    /* 如果你使用 Qt 资源系统 (.qrc)，前面加 :/ */
+    image: url(icon/down_arrows.png);
+    width: 16px;              /* 与 PNG 实际尺寸一致 */
+    height: 16px;
+    margin-top: 6px;          /* (drop-down 高度 28px - 箭头高 16px)/2 = 6px，垂直居中 */
+    margin-left: auto;        /* 水平居中 */
+    margin-right: auto;
+}
+
+/* 4. 弹出列表 */
+QComboBox#pageSwitcher QAbstractItemView {
+    background-color: white;
+    border: 2px solid #2196F3;
+    outline: none;
+    selection-background-color: #E3F2FD;
+}
+/* 1. QScrollArea 背景與圓角（在淺藍色大背景上顯示白底） */
+QScrollArea {
+    background-color: white;
+    border: 2px solid #2196F3;   /* 藍色邊框 */
+    border-radius: 6px;          /* 圓角 */
+    padding: 4px;                /* 內距 */
+}
+
+/* 2. 滾動條軌道：白底＋淺灰分隔 */
+QScrollBar:vertical, QScrollBar:horizontal {
+    background: white;
+    width: 12px;                /* 或者 height:12px for horizontal */
+    margin: 0px 0px 0px 0px;    /* 視需要調整 */
+    border: 1px solid #E0E0E0;  /* 淡灰分隔 */
+    border-radius: 6px;
+}
+
+/* 3. 滾動滑塊（handle）：白底＋藍邊＋圓角 */
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+    background: white;
+    border: 2px solid #2196F3;
+    border-radius: 6px;
+    min-height: 20px;           /* 滑塊最小尺寸 */
+    min-width: 20px;
+}
+
+/* 4. 滑塊懸停／按下時變色 */
+QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
+    background: #E3F2FD;        /* 淡藍底 */
+}
+QScrollBar::handle:vertical:pressed, QScrollBar::handle:horizontal:pressed {
+    background: #ADD8E6;        /* 主體淺藍 */
+}
+
+/* 5. 滾動條箭頭（上下左右箭頭）隱藏或自訂 */
+QScrollBar::sub-line, QScrollBar::add-line {
+    background: none;           /* 隱藏預設箭頭區 */
+    height: 0; width: 0;
+}
+QLineEdit {
+    background-color: white;           /* 白底 */
+    color: #1976D2;                     /* 深藍文字 */
+    border: 2px solid #2196F3;          /* 藍色邊框 */
+    border-radius: 6px;                 /* 圓角 */
+    padding: 4px 8px;                   /* 內邊距，上下4px，左右8px */
+    selection-background-color: #E3F2FD; /* 選字時淡藍底 */
+    selection-color: #1976D2;           /* 選字時深藍字 */
+}
+
+/* 滑鼠懸停時邊框加深 */
+QLineEdit:hover {
+    border: 2px solid #1976D2;          /* 深藍邊框 */
+}
+
+/* 獲得焦點時顯示聚焦輪廓 */
+QLineEdit:focus {
+    outline: none;                      /* 去掉預設虛線 */
+    border: 2px solid #0D47A1;          /* 更深藍邊框 */
+    background-color: #FAFCFF;          /* 微白底提示 */
+}
+
+/* placeholder（提示文字）顏色 */
+QLineEdit[placeholderText]:empty {
+    color: #90A4AE;                     /* 灰藍提示文字 */
+}
+
+/* 多行文字框 QTextEdit 同樣風格 */
+QTextEdit {
+    background-color: white;
+    color: #1976D2;
+    border: 2px solid #2196F3;
+    border-radius: 6px;
+    padding: 4px 8px;
+    selection-background-color: #E3F2FD;
+    selection-color: #1976D2;
+}
+
+/* 滑鼠懸停時 */
+QTextEdit:hover {
+    border: 2px solid #1976D2;
+}
+
+/* 獲得焦點時 */
+QTextEdit:focus {
+    outline: none;
+    border: 2px solid #0D47A1;
+    background-color: #FAFCFF;
+}
+
+/* disabled 狀態 */
+QLineEdit:disabled, QTextEdit:disabled {
+    background-color: #F5F5F5;          /* 灰色底 */
+    color: #BDBDBD;                     /* 淺灰字 */
+    border: 2px solid #E0E0E0;          /* 淺灰邊 */
+}
+QWidget#poseWidget {
+    background-color: white;         /* 白底 */
+    border: 2px solid #2196F3;       /* 蓝色边框 */
+    border-radius: 6px;              /* 圆角 */
+    padding: 8px;                    /* 内边距 */
+    margin: 4px;                     /* 外边距，和其它 widget 保持间隔 */
+}

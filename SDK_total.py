@@ -1,9 +1,10 @@
-from PySide6.QtWidgets import QHBoxLayout,QVBoxLayout, QGridLayout, QApplication, QWidget, QFileDialog, QLabel, QScrollArea,QToolTip,QPushButton, QSizePolicy,QStackedWidget,QComboBox
+from PySide6.QtWidgets import QHBoxLayout,QVBoxLayout, QGridLayout, QApplication, QWidget, QFileDialog, QLabel, QScrollArea,QToolTip,QPushButton, QSizePolicy,QStackedWidget,QComboBox,QApplication
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QTimer, Qt, QMimeData
 from PySide6.QtGui import QWindow, QDrag, QPixmap, QImage,QCursor
 from PySide6 import QtCore
-from panda3d.core import WindowProperties, NodePath, PointLight, AmbientLight, loadPrcFileData, PNMImage
+from panda3d.core import WindowProperties, PointLight, AmbientLight, loadPrcFileData, PNMImage, Vec3
+from direct.actor.Actor import Actor
 from direct.showbase.ShowBase import ShowBase
 import os
 import sys
@@ -17,7 +18,7 @@ from PySide6.QtCore import QSize
 from draggablelable import DraggableLabel
 from alarm_gui import AlarmClock
 from action_editer import CustomDropdown
-
+from trigger import ConfigWindow
 # Set up shared OpenGL context and Panda3D window properties
 QApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
 loadPrcFileData('', 'undecorated 1')
@@ -77,10 +78,12 @@ class MultiPageContainer(QWidget):
         top_layout.setSpacing(0)
 
         self.pageSwitcher = QComboBox()
+        self.pageSwitcher.setObjectName("pageSwitcher")
         # 根據傳入的 ui 頁面建立選項，這裡可以自定義顯示名稱
         self.pageSwitcher.addItem("動作編輯")
         self.pageSwitcher.addItem("指令編輯")
         self.pageSwitcher.addItem("鬧鐘")
+        self.pageSwitcher.addItem("鏡頭")
 
         top_layout.addWidget(self.pageSwitcher, alignment=Qt.AlignLeft | Qt.AlignTop)
         main_layout.addLayout(top_layout)
@@ -160,6 +163,7 @@ class PoseWidget(QWidget):
 
         self.order_label = QLabel(f"{index + 1}")
         self.order_label.setAlignment(Qt.AlignCenter)
+        self.order_label.setObjectName("poseIndexLabel")
         main_layout.addWidget(self.order_label, alignment=Qt.AlignCenter)
 
     def select_expression(self):
@@ -191,6 +195,7 @@ class Panda3DWidget(QWidget):
     def __init__(self, base, parent=None):
         super().__init__(parent)
         self.base = base
+        self.base.disableMouse()
         Wid = win32gui.FindWindowEx(0, 0, None, "Panda")
         if Wid == 0:
             print("Failed to find Panda3D window.")
@@ -207,16 +212,50 @@ class Panda3DWidget(QWidget):
         
 
         # Load model
-        self.model = self.base.loader.loadModel("blender/robo1.glb")
-        if self.model:
-            self.model.reparentTo(self.base.render)
-        else:
-            print("Model failed to load.")
-        self.left_arm = self.model.find("**/left_arm")
-        self.right_arm = self.model.find("**/right_arm")
-        self.base.cam.setPos(8, 3, 3)
-        self.base.cam.lookAt(self.model)
+        # 1) 用 Actor 載入並自動套用 bind pose
+        self.actor = Actor("blender/robot_all.glb")
+        if not self.actor:
+            print("Actor 載入失敗！")
+            return
+        self.actor.reparentTo(self.base.render)
+        self.actor.setScale(0.1)
+
+        # 3) 重新計算 tight bounds，並把鏡頭擺回去
+        # 計算 tight bounds 之後──
+        min_pt, max_pt = self.actor.getTightBounds()
+        center   = (min_pt + max_pt) * 0.5
+        radius   = (max_pt - center).length()
+
+        # 你原本的後退距離
+        cam_dist = radius * 3.6
+
+        # 原本的抬高（模型高度 10%）
+        vertical_offset = (max_pt.z - min_pt.z) * 0.1
+
+        # 再額外抬高模型 20% 的高度
+        extra_height = (max_pt.z - min_pt.z) * 1
+
+        # 合併起來
+        self.base.cam.setPos(
+            center + Vec3(cam_dist, 0, vertical_offset + extra_height)
+        )
+        self.base.cam.lookAt(center)
+
+   
+        # 如果有預設動作，可以先 pose 到第 0 幀，確保 bind-pose 正確
+        # self.actor.pose("default", 0)
+         # 2) 釋放並取得關節的 NodePath，之後就能像操作普通 NodePath 一樣
+        #    注意：第二個參數要填你的 root 骨架名稱，通常是 "modelRoot" 或 "root"
+        self.left_arm  = self.actor.controlJoint(None, "modelRoot", "left_hand")
+        self.right_arm = self.actor.controlJoint(None, "modelRoot", "right_hand")
+        self.body      = self.actor.controlJoint(None, "modelRoot", "root")
+        self.head      = self.actor.controlJoint(None, "modelRoot", "head")
+        self.bottom    = self.actor.controlJoint(None, "modelRoot", "bottom")
+        
+        self.base.cam.lookAt(self.actor)
+
         self.add_lighting()
+       
 
     def add_lighting(self):
         ambient_light = AmbientLight('ambient_light')
@@ -249,16 +288,18 @@ class Stats:
 
         # Connect slider events
         self.slider1.valueChanged.connect(lambda: self.update_slider_value(self.slider1, self.label1))
-        self.slider2.valueChanged.connect(lambda: self.update_slider_value(self.slider2, self.label2))
-        self.slider3.valueChanged.connect(lambda: self.update_slider_value(self.slider3, self.label3))
+        self.slider2.valueChanged.connect(lambda: self.update_slider_value(self.slider2, self.label3))
+        self.slider3.valueChanged.connect(lambda: self.update_slider_value(self.slider3, self.label2))
         self.slider4.valueChanged.connect(lambda: self.update_slider_value(self.slider4, self.label4))
 
         # Initialize Panda3D
         self.base = ShowBase()
         container = self.ui.findChild(QWidget, "Panda3DContainer")
         self.panda_widget = Panda3DWidget(self.base, parent=container)
-        self.slider3.valueChanged.connect(lambda: self.panda_widget.left_arm.setHpr(0, 0, self.slider3.value()))
-        self.slider4.valueChanged.connect(lambda: self.panda_widget.right_arm.setHpr(0, 0, self.slider4.value()))
+        self.slider1.valueChanged.connect(lambda:  self.panda_widget.head.setHpr( self.slider1.value(),0, 0))
+        self.slider2.valueChanged.connect(lambda:  self.panda_widget.body.setHpr( 0,0,self.slider2.value()))
+        self.slider3.valueChanged.connect(lambda: self.panda_widget.left_arm.setHpr(0, 0, self.slider3.value()-180))
+        self.slider4.valueChanged.connect(lambda: self.panda_widget.right_arm.setHpr(0, 0 ,-(self.slider4.value()-180)))
 
         # Connect button events
         self.ui.store_button.clicked.connect(self.store_event)
@@ -266,7 +307,7 @@ class Stats:
         self.ui.play_button.clicked.connect(self.play_event)
         self.ui.store_file.clicked.connect(self.store_to_file_event)
         self.ui.play_file.clicked.connect(self.play_from_file_event)
-
+        container.setObjectName("pandaContainer")  
         layout = QVBoxLayout(container)
         layout.addWidget(self.panda_widget)
 
@@ -315,6 +356,7 @@ class Stats:
         self.label3 = ui.Slider_num3
         self.label4 = ui.Slider_num4
         self.expressionPreviewLabel=ui.expression_label
+        self.expressionPreviewLabel.setObjectName("exprLabel")  
     def set_slider(self, slider):
         slider.setMinimum(-90)
         slider.setMaximum(90)
@@ -355,7 +397,8 @@ class Stats:
             
             # 顯示 Panda3D 擷取的縮圖
             pose_widget.image_label.setPixmap(QPixmap.fromImage(thumbnail))
-            
+            pose_widget.setObjectName("poseWidget")    
+            pose_widget.setAttribute(Qt.WA_StyledBackground, True) 
             # 加入到介面佈局與管理陣列
             self.captured_images_layout.addWidget(pose_widget)
             self.captured_images.append(pose_widget)
@@ -609,7 +652,13 @@ class Stats:
 if __name__ == "__main__":
     launch_alarm_bg()
     app = QApplication(sys.argv)  # 首先建立 QApplication
-
+    # 載入並套用外部 QSS
+    qss_path = os.path.join(BASE_DIR, "style", "style.qss")
+    try:
+        with open(qss_path, "r", encoding="utf-8") as f:
+            app.setStyleSheet(f.read())        # 一次性套用整份樣式表 :contentReference[oaicite:11]{index=11}
+    except Exception as e:
+        print("載入 QSS 失敗：", e)
     # 建立 AlarmClock 物件，若其為 QMainWindow 則取出 centralWidget
     alarm = AlarmClock()
     alarm_widget = alarm.centralWidget() if alarm.centralWidget() is not None else alarm
@@ -651,7 +700,7 @@ if __name__ == "__main__":
     
 
     # 將三個介面加入多頁面容器中
-    container = MultiPageContainer([ stats.ui, window,alarm_widget])
+    container = MultiPageContainer([ stats.ui, window,alarm_widget,ConfigWindow(), ])
     #設定視窗標題
     container.setWindowTitle('小機器人')
     #設定視窗大小
